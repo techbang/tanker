@@ -58,7 +58,7 @@ module Tanker
         options.merge!( :docid => record.it_doc_id, :fields => record.tanker_index_data )
         options
       end
-      records.first.class.tanker_index.add_documents(data)
+      records.first.parent_class.tanker_index.add_documents(data)
     end
 
     def search(models, query, options = {})
@@ -103,15 +103,17 @@ module Tanker
       options = { :start => per_page * (page - 1), :len => per_page }.merge(options)
       results = index.search(query, options)
 
-      @entries = WillPaginate::Collection.create(page, per_page) do |pager|
-        # inject the result array into the paginated collection:
-        pager.replace instantiate_results(results)
-
-        unless pager.total_entries
-          # the pager didn't manage to guess the total count, do it manually
-          pager.total_entries = results["matches"]
-        end
-      end
+      #@entries = WillPaginate::Collection.create(page, per_page) do |pager|
+      #  # inject the result array into the paginated collection:
+      #  pager.replace instantiate_results(results)
+      #
+      #  unless pager.total_entries
+      #    # the pager didn't manage to guess the total count, do it manually
+      #    pager.total_entries = results["matches"]
+      #  end
+      #end
+      
+      @entries = instantiate_results(results)
     end
 
     protected
@@ -130,12 +132,21 @@ module Tanker
 
         id_map.each do |klass, ids|
           # replace the id list with an eager-loaded list of records for this model
-          id_map[klass] = constantize(klass).find(ids)
+          id_map[klass] = constantize(klass).where(:id => ids ).scoped
         end
-        # return them in order
-        results.map do |result|
-          model, id = result["__type"], result["__id"]
-          id_map[model].detect {|record| id.to_i == record.id }
+        
+        if id_map.size > 1
+          
+          # Cross model Search
+          #return them in order
+          results.map do |result|
+            model, id = result["__type"], result["__id"]
+            id_map[model].detect {|record| id.to_i == record.id }
+          end
+          
+        else
+          # Single model Search
+          return id_map.values.first
         end
       end
 
@@ -252,7 +263,7 @@ module Tanker
   module InstanceMethods
 
     def tanker_config
-      self.class.tanker_config || raise(NotConfigured, "Please configure Tanker for #{self.class.inspect} with the 'tankit' block")
+      parent_class.tanker_config || raise(NotConfigured, "Please configure Tanker for #{parent_class.inspect} with the 'tankit' block")
     end
 
     def tanker_indexes
@@ -290,7 +301,7 @@ module Tanker
       end
 
       data[:__any] = data.values.sort_by{|v| v.to_s}.join " . "
-      data[:__type] = self.class.name
+      data[:__type] = parent_class.name
       data[:__id] = self.id
 
       data
@@ -310,7 +321,11 @@ module Tanker
 
     # create a unique index based on the model name and unique id
     def it_doc_id
-      self.class.name + ' ' + self.id.to_s
+      parent_class.name + ' ' + self.id.to_s
+    end
+    
+    def parent_class
+      self.class
     end
   end
 end
