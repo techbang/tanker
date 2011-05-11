@@ -181,7 +181,7 @@ module IndexTank
         #   :function => an int with the index of the scoring function to be used
         #                for this query
         def search(query, options={})
-            options = { :start => 0, :len => 10 }.merge(options)
+            options = { :start => 0, :len => 1000 }.merge(options)
             options.merge!( :q => query )
             begin
                 code, r = GET "/search", options

@@ -132,7 +132,8 @@ module Tanker
 
         id_map.each do |klass, ids|
           # replace the id list with an eager-loaded list of records for this model
-          id_map[klass] = constantize(klass).where(:id => ids ).scoped
+          #id_map[klass] = constantize(klass).where(:id => ids ).scoped
+          id_map[klass] = ids
         end
         
         if id_map.size > 1
