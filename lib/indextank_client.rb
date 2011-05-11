@@ -140,8 +140,12 @@ module IndexTank
         end
 
         def add_documents(data_array)
+          begin
             code, r = PUT "/docs", data_array
             return r
+          rescue Exception => e
+            puts e
+          end
         end
 
         def update_variables(docid, variables, options={})
