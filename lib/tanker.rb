@@ -99,7 +99,7 @@ module Tanker
 
       options[:fetch] = "__type,__id"
 
-      query = "__any:(\"#{query.to_s}\") __type:(#{models.map(&:name).map {|name| "\"#{name.split('::').join(' ')}\"" }.join(' OR ')})"
+      query = "__any:(\'#{query.to_s}\') __type:(#{models.map(&:name).map {|name| "\"#{name.split('::').join(' ')}\"" }.join(' OR ')})"
       options = { :start => per_page * (page - 1), :len => per_page }.merge(options)
       results = index.search(query, options)
 
